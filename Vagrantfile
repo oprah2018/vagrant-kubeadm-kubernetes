@@ -1,4 +1,3 @@
-
 require "yaml"
 vagrant_root = File.dirname(File.expand_path(__FILE__))
 settings = YAML.load_file "#{vagrant_root}/settings.yaml"
@@ -28,7 +27,8 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "controlplane" do |controlplane|
     controlplane.vm.hostname = "controlplane"
-    controlplane.vm.network "private_network", ip: settings["network"]["control_ip"]
+    # Change the control plane IP to a non-conflicting subnet (e.g., 192.168.56.x)
+    controlplane.vm.network "private_network", ip: "192.168.56.10"
     if settings["shared_folders"]
       settings["shared_folders"].each do |shared_folder|
         controlplane.vm.synced_folder shared_folder["host_path"], shared_folder["vm_path"]
@@ -53,7 +53,7 @@ Vagrant.configure("2") do |config|
     controlplane.vm.provision "shell",
       env: {
         "CALICO_VERSION" => settings["software"]["calico"],
-        "CONTROL_IP" => settings["network"]["control_ip"],
+        "CONTROL_IP" => "192.168.56.10",  # Change control IP to the new IP
         "POD_CIDR" => settings["network"]["pod_cidr"],
         "SERVICE_CIDR" => settings["network"]["service_cidr"]
       },
@@ -64,7 +64,8 @@ Vagrant.configure("2") do |config|
 
     config.vm.define "node0#{i}" do |node|
       node.vm.hostname = "node0#{i}"
-      node.vm.network "private_network", ip: IP_NW + "#{IP_START + i}"
+      # Change the worker node IPs to use the non-conflicting subnet (e.g., 192.168.56.x)
+      node.vm.network "private_network", ip: "192.168.56.#{IP_START + i}"
       if settings["shared_folders"]
         settings["shared_folders"].each do |shared_folder|
           node.vm.synced_folder shared_folder["host_path"], shared_folder["vm_path"]
@@ -93,6 +94,6 @@ Vagrant.configure("2") do |config|
         node.vm.provision "shell", path: "scripts/dashboard.sh"
       end
     end
-
   end
-end 
+end
+
